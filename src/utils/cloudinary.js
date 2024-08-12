@@ -15,8 +15,9 @@ const uploadOnCloudinary = async (localFilePath) => {
             resource_type: "auto",  
         })
         // upload hogi
-        console.log("file is uploaded on cloudinary", response.url)
-        return response
+       // console.log("file is uploaded on cloudinary", response.url)
+       fs.unlinkSync(localFilePath)
+       return response
     } catch (error) {
         fs.unlinkSync(localFilePath)  
     }
