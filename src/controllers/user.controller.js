@@ -23,17 +23,7 @@ const generateAccessAndRefereshTokens = async(userId) =>{
 }
 
 const registerUser = asyncHandler( async (req, res) => {
-    // get user details from frontend
-    // validation - not empty
-    // check if user already exists: username, email
-    // check for images, check for avatar
-    // upload them to cloudinary, avatar
-    // create user object - create entry in db
-    // remove password and refresh token field from response
-    // check for user creation
-    // return res
-
-
+  
     const {fullName, email, username, password } = req.body
     //console.log("email: ", email);
 
@@ -94,9 +84,48 @@ const registerUser = asyncHandler( async (req, res) => {
         new ApiResponse(200, createdUser, "User registered Successfully")
     )
 
-} )
+})
 
-export {registerUser}
+const loginUser= asyncHandler( async (req, res) => {
+     const {email, username, password} = req.body
+     if(!username || !email){
+        throw new ApiError(400, "Username or email is required!")
+     }
+
+     const user = await User.findOne(
+        {$or: [{email}, {username}]}
+    )
+
+    if(!user){
+        throw new ApiError(404, "User not found")
+    }
+
+   const isPasswordValid = await user.isPasswordCorrect(password)
+   if(!isPasswordValid){
+    throw new ApiError(401, "Invalid user credentials")
+    }
+
+   const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(user._id)
+   
+   const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+
+   const options= {
+    httpOnly: true,
+    secure: true
+   }
+
+   return res.status(200).cookie("accessToken", accessToken, options).cookie("refreshToken", refreshToken, options)
+   .json(
+    new ApiResponse(200, {
+        user: loggedInUser, accessToken, refreshToken
+    }, 
+    "User logged in successfully"
+    )
+   )
+
+})
+
+export {registerUser, loginUser}
 
 
 
@@ -108,12 +137,4 @@ export {registerUser}
 
 
 
-    //get user details frontend
-    //validation-not empty
-    //check if user exists:username+email
-    //check for images+avatar
-    //upload to cloudinary,avatar
-    //create user object-create entry in db
-    //remove passs and refresh token from response
-    //check for user creation
-    //send response
+  
